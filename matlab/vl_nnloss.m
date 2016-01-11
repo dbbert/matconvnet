@@ -167,7 +167,16 @@ switch lower(opts.loss)
 
     % null labels denote instances that should be skipped
     instanceWeights = single(c ~= 0) ;
-
+    
+  case {'euclidean', 'l1'}
+    assert(labelSize(3) == inputSize(3)) ;
+    
+    if isempty(opts.instanceWeights)
+        instanceWeights = single(c(:,:,1,:) ~= 0) ;
+    else
+        instanceWeights = reshape(opts.instanceWeights, 1,1,1,[]) ;
+    end
+    opts.instanceWeights = [] ;
   otherwise
     error('Unknown loss ''%s''.', opts.loss) ;
 end
@@ -224,6 +233,13 @@ if nargin <= 2 || isempty(dzdy)
       t = b + log(exp(-b) + exp(a-b)) ;
     case 'hinge'
       t = max(0, 1 - c.*X) ;
+    case 'euclidean'
+      d = bsxfun(@minus, X, c) ;
+      t = sum(d.*d,3) ; % not squared
+%       t = sqrt(sum(d.*d,3)) ; % squared
+    case 'l1'
+      d = bsxfun(@minus, X, c) ;
+      t = sum(abs(d),3) ;
   end
   Y = instanceWeights(:)' * t(:) ;
 else
@@ -262,6 +278,14 @@ else
       Y = - dzdy .* c ./ (1 + exp(c.*X)) ;
     case 'hinge'
       Y = - dzdy .* c .* (c.*X < 1) ;
+    case 'euclidean'
+      d = bsxfun(@minus, X, c) ;
+      Y = bsxfun(@times, 2 * dzdy, d) ; % not squared
+%       Y = sum(d.*d,3).^(-0.5) ;
+%       Y = bsxfun(@times, dzdy .* Y,  d) ;
+    case 'l1'
+      d = bsxfun(@minus, X, c) ;
+      Y = bsxfun(@times, dzdy, sign(d)) ;
   end
 end
 
