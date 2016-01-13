@@ -18,30 +18,43 @@ function net = getNet(varargin)
     net = dagnn.DagNN() ;
     
     inputs = {'input'};
+    
+    % encoder
+% %     outputs = add_conv(net, netOpts, 'block1', inputs, 16, 16, netOpts.nChns, 10, 1, 0);
+%     outputs = add_conv(net, netOpts, 'block1', inputs, 7, 7, netOpts.nChns, 32, 1, 3);
+%     outputs = add_normalizeL1(net, netOpts, 'normalize', outputs);
+%     net.addLayer('repellingloss', RepellingLoss('loss', 'repelling'), outputs, 'objective') ;
 
     % encoder
-    outputs = add_dropout(net, netOpts, 'dropout0', inputs, 0.25);
-    outputs = add_conv(net, netOpts, 'block1', outputs, 4, 4, netOpts.nChns, 16, 2, 1);
-    outputs = add_batchNorm(net, netOpts, 'block1', outputs, 16);
+%     outputs = add_dropout(net, netOpts, 'dropout0', inputs, 0.25);
+    outputs = add_conv(net, netOpts, 'block1', inputs, 4, 4, netOpts.nChns, 16, 2, 1);
+%     outputs = add_batchNorm(net, netOpts, 'block1', outputs, 16);
     outputs = add_tanh(net, netOpts, 'block1', outputs) ;
-    outputs = add_dropout(net, netOpts, 'dropout1', outputs, 0.25);
+%     outputsNormalized = add_normalizeL1(net, netOpts, 'normalizeL1a', outputs);
+%     net.addLayer('repellinglossa', RepellingLoss('loss', 'repelling'), outputsNormalized, 'repela') ;
+%     outputs = add_dropout(net, netOpts, 'dropout1', outputs, 0.25);
     outputs = add_conv(net, netOpts, 'block2', outputs, 4, 4, 16, 32, 2, 1);
-    outputs = add_batchNorm(net, netOpts, 'block2', outputs, 32);
+%     outputs = add_batchNorm(net, netOpts, 'block2', outputs, 32);
     outputs = add_tanh(net, netOpts, 'block2', outputs) ;
-    outputs = add_dropout(net, netOpts, 'dropout2', outputs, 0.25);
+%     outputsNormalized = add_normalizeL1(net, netOpts, 'normalizeL1b', outputs);
+%     net.addLayer('repellinglossb', RepellingLoss('loss', 'repelling'), outputsNormalized, 'repelb') ;
+%     outputs = add_dropout(net, netOpts, 'dropout2', outputs, 0.25);
     outputs = add_conv(net, netOpts, 'block3', outputs, 4, 4, 32, 128, 1, 0);
-    outputs = add_batchNorm(net, netOpts, 'block3', outputs, 128);
+%     outputs = add_batchNorm(net, netOpts, 'block3', outputs, 128);
     outputs = add_tanh(net, netOpts, 'block3', outputs) ;    
-    outputs = add_dropout(net, netOpts, 'dropout3', outputs, 0.25);
+%     outputs = add_dropout(net, netOpts, 'dropout3', outputs, 0.25);
+%     outputs = add_normalize(net, netOpts, 'normalize', outputs);
 
-%     net.addLayer('repellingloss', dagnn.Loss('loss', 'repelling'), outputs, 'repel') ;
+    % these two should be merged into one layer.
+    outputs = add_normalizeL1(net, netOpts, 'normalizeL1', outputs);
+    net.addLayer('repellingloss', RepellingLoss('loss', 'repelling'), outputs, 'repel') ;
     
     % decoder
     outputs = add_deconv(net, netOpts, 'block3_abc', outputs, 4, 4, 128, 32, 1, 0);
-    outputs = add_batchNorm(net, netOpts, 'deblock3', outputs, 32);
+%     outputs = add_batchNorm(net, netOpts, 'deblock3', outputs, 32);
     outputs = add_tanh(net, netOpts, 'deblock3', outputs) ;
     outputs = add_deconv(net, netOpts, 'block2_abc', outputs, 4, 4, 32, 16, 2, 1);
-    outputs = add_batchNorm(net, netOpts, 'deblock2', outputs, 16);
+%     outputs = add_batchNorm(net, netOpts, 'deblock2', outputs, 16);
     outputs = add_tanh(net, netOpts, 'deblock2', outputs) ;
     outputs = add_deconv(net, netOpts, 'block1_abc', outputs, 4, 4, 16, netOpts.nChns, 2, 1);
     outputs = add_tanh(net, netOpts, 'deblock1', outputs) ;
@@ -178,7 +191,7 @@ function outputs = add_deblock(net, opts, name, inputs, h, w, in, out, stride, p
 end
 
 function outputs = add_conv(net, opts, name, inputs, h, w, in, out, stride, pad)
-    hasBias = false;
+    hasBias = true;
     convOpts = {'CudnnWorkspaceLimit', opts.cudnnWorkspaceLimit} ;    
     params = struct(...
             'name', {}, ...
@@ -454,6 +467,20 @@ function outputs = add_normalize(net, opts, name, inputs)
     block = dagnn.LRN('param', param) ;
 
     layerName = sprintf('%s_norm', name);
+    outputs = {layerName};
+
+    net.addLayer(...
+        layerName, ...
+        block, ...
+        inputs, ...
+        outputs) ;
+end
+
+function outputs = add_normalizeL1(net, opts, name, inputs)
+    p = 1 ;
+    block = dagnn.NormalizeLp('p', p) ;
+
+    layerName = sprintf('%s_normL1', name);
     outputs = {layerName};
 
     net.addLayer(...

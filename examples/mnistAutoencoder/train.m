@@ -9,9 +9,9 @@ opts.baseDir = 'data';
 opts.dataset = 'mnist';
 % opts.dataset = 'cifar';
 opts.imageSize = [16 16 1] ;
-opts.seed = 1;
+opts.seed = 5;
 opts.modelType = 'test' ;
-opts.learningRate = logspace(-3, -4, 10) ;
+opts.learningRate = logspace(-1, -3, 10) ;
 opts.batchSize = 32 ;
 opts.nClasses = 8 ;
 
@@ -35,7 +35,8 @@ opts.train.expDir = opts.expDir ;
 opts.train.learningRate = opts.learningRate ;
 opts.train.weightDecay = 1e-5;
 opts.train.momentum = 0.50;
-opts.train.derOutputs = {'objective', 1} ;
+opts.train.derOutputs = {'objective', 1, 'repel', 1} ;
+% opts.train.derOutputs = {'repela', 1, 'repelb', 1, 'repel', 1} ;
 
 opts = vl_argparse(opts, varargin) ;
 opts.train.numEpochs = numel(opts.train.learningRate) ;

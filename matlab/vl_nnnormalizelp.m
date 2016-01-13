@@ -1,4 +1,4 @@
-function y = vl_nnnormalizelp(x,dzdy,varargin)
+function y = vl_nnnormalizelp(x,dzdy,p,varargin)
 %VL_NNNORMALIZELP  CNN Lp normalization
 %   Y = VL_NNNORMALIZELP(X) normalizes in Lp norm each spatial
 %   location in the array X:
@@ -19,17 +19,34 @@ function y = vl_nnnormalizelp(x,dzdy,varargin)
 %      The constant added to the sum of p-powers before taking the
 %      1/p square root (see the formula above).
 
-opts.epsilon = 1e-2 ;
-opts.p = 2 ;
+opts.epsilon = eps ;
 opts = vl_argparse(opts, varargin) ;
 
-massp = (sum(x.^opts.p,3) + opts.epsilon) ;
-mass = massp.^(1/opts.p) ;
-y = bsxfun(@rdivide, x, mass) ;
-
-if nargin < 2 || isempty(dzdy)
-  return ;
+% L1 normalization
+if p == 1
+  mass = sum(abs(x),3) ;
+  y = bsxfun(@rdivide, x, mass) ;
+  
+  assert(all(sum(abs(y(1,1,:,:)),3))) ;
+    
+  if nargin < 2 || isempty(dzdy)
+      return ;
+  else  
+      % TODO: check if this is correct
+      dzdy = bsxfun(@rdivide, dzdy, mass) ;
+      y = dzdy - bsxfun(@times, sum(dzdy .* x, 3), bsxfun(@rdivide, sign(x), mass)) ;
+  end  
+  
+% Other normalizations
 else
-  dzdy = bsxfun(@rdivide, dzdy, mass) ;
-  y = dzdy - bsxfun(@times, sum(dzdy .* x, 3), bsxfun(@rdivide, x.^(opts.p-1), massp)) ;
+    massp = (sum(x.^p,3) + opts.epsilon) ;
+    mass = massp.^(1/p) ;
+    y = bsxfun(@rdivide, x, mass) ;
+
+    if nargin < 2 || isempty(dzdy)
+      return ;
+    else    
+          dzdy = bsxfun(@rdivide, dzdy, mass) ;
+          y = dzdy - bsxfun(@times, sum(dzdy .* x, 3), bsxfun(@rdivide, x.^(p-1), massp)) ;
+    end
 end
