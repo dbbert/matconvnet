@@ -320,7 +320,7 @@ for t=1:opts.batchSize:numel(subset)
   batchNumber = batchNumber + 1;
   
 end
-visualize(generatorNet) ;
+% visualize(generatorNet) ;
 generatorNet.reset() ;
 generatorNet.move('cpu') ;
 discriminatorNet.reset() ;

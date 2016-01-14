@@ -17,68 +17,49 @@ function net = getNet(varargin)
     
     net = dagnn.DagNN() ;
     
-    inputs = {'input'};
-    
     % encoder
 % %     outputs = add_conv(net, netOpts, 'block1', inputs, 16, 16, netOpts.nChns, 10, 1, 0);
 %     outputs = add_conv(net, netOpts, 'block1', inputs, 7, 7, netOpts.nChns, 32, 1, 3);
 %     outputs = add_normalizeL1(net, netOpts, 'normalize', outputs);
 %     net.addLayer('repellingloss', RepellingLoss('loss', 'repelling'), outputs, 'objective') ;
 
-    % encoder
-%     outputs = add_dropout(net, netOpts, 'dropout0', inputs, 0.25);
-    outputs = add_conv(net, netOpts, 'block1', inputs, 4, 4, netOpts.nChns, 16, 2, 1);
-%     outputs = add_batchNorm(net, netOpts, 'block1', outputs, 16);
-    outputs = add_tanh(net, netOpts, 'block1', outputs) ;
-%     outputsNormalized = add_normalizeL1(net, netOpts, 'normalizeL1a', outputs);
-%     net.addLayer('repellinglossa', RepellingLoss('loss', 'repelling'), outputsNormalized, 'repela') ;
-%     outputs = add_dropout(net, netOpts, 'dropout1', outputs, 0.25);
-    outputs = add_conv(net, netOpts, 'block2', outputs, 4, 4, 16, 32, 2, 1);
-%     outputs = add_batchNorm(net, netOpts, 'block2', outputs, 32);
-    outputs = add_tanh(net, netOpts, 'block2', outputs) ;
-%     outputsNormalized = add_normalizeL1(net, netOpts, 'normalizeL1b', outputs);
-%     net.addLayer('repellinglossb', RepellingLoss('loss', 'repelling'), outputsNormalized, 'repelb') ;
-%     outputs = add_dropout(net, netOpts, 'dropout2', outputs, 0.25);
-    outputs = add_conv(net, netOpts, 'block3', outputs, 4, 4, 32, 128, 1, 0);
-%     outputs = add_batchNorm(net, netOpts, 'block3', outputs, 128);
-    outputs = add_tanh(net, netOpts, 'block3', outputs) ;    
-%     outputs = add_dropout(net, netOpts, 'dropout3', outputs, 0.25);
-%     outputs = add_normalize(net, netOpts, 'normalize', outputs);
+    vectorSize = 50;
 
-    % these two should be merged into one layer.
-    outputs = add_normalizeL1(net, netOpts, 'normalizeL1', outputs);
-    net.addLayer('repellingloss', RepellingLoss('loss', 'repelling'), outputs, 'repel') ;
-    
-    % decoder
-    outputs = add_deconv(net, netOpts, 'block3_abc', outputs, 4, 4, 128, 32, 1, 0);
-%     outputs = add_batchNorm(net, netOpts, 'deblock3', outputs, 32);
-    outputs = add_tanh(net, netOpts, 'deblock3', outputs) ;
-    outputs = add_deconv(net, netOpts, 'block2_abc', outputs, 4, 4, 32, 16, 2, 1);
-%     outputs = add_batchNorm(net, netOpts, 'deblock2', outputs, 16);
-    outputs = add_tanh(net, netOpts, 'deblock2', outputs) ;
-    outputs = add_deconv(net, netOpts, 'block1_abc', outputs, 4, 4, 16, netOpts.nChns, 2, 1);
-    outputs = add_tanh(net, netOpts, 'deblock1', outputs) ;
-    net.addLayer('loss', dagnn.Loss('loss', 'euclidean'), [outputs, {'input'}], 'objective') ;
-    
-%     switch opts.type
-%         case 'encoder'
-%             outputs = add_blockNoBatchNorm(net, netOpts, 'block1', inputs, 3, 3, netOpts.nChns, 8, 1, 1);
-%             outputs = add_blockNoBatchNorm(net, netOpts, 'block2', outputs, 3, 3, 8, 16, 2, 1);
-%             outputs = add_blockNoBatchNorm(net, netOpts, 'block3', outputs, 3, 3, 16, 32, 2, 1);
-%             outputs = add_conv(net, netOpts, 'block4', outputs, 4, 4, 32, vectorSize, 1, 0);
-% %             outputs = add_normalize(net, netOpts, 'normalize', outputs);
-%             net.addLayer('euclidean', dagnn.Loss('loss', 'L1'), [outputs, {'embedding'}], 'euclidean') ;
-%             outputs = add_conv(net, netOpts, 'block5', outputs, 1, 1, vectorSize, 2, 1, 0);
-%             net.addLayer('loss', dagnn.Loss('loss', 'softmaxlog'), [outputs, {'label'}], 'objective') ;
-%             net.addLayer('error', dagnn.Loss('loss', 'classerror'), [outputs, {'label'}], 'error') ;
-%         case 'decoder'
-% %             outputs = add_normalize(net, netOpts, 'normalize', inputs);
-%             outputs = add_deblock(net, netOpts, 'deblock4', inputs, 4, 4, vectorSize, 128, 1, 0);
-%             outputs = add_deblock(net, netOpts, 'deblock3', outputs, 4, 4, 128, 64, 2, 1);
-%             outputs = add_deblock(net, netOpts, 'deblock2', outputs, 4, 4, 64, 32, 2, 1);
-%             outputs = add_deconv(net, netOpts, 'deblock1', outputs, 3, 3, 32, netOpts.nChns, 1, 1);
-%             outputs = add_tanh(net, netOpts, 'deblock1', outputs);
-%     end
+    switch opts.type
+        case 'encoder'
+            %     outputs = add_dropout(net, netOpts, 'dropout0', inputs, 0.25);
+            outputs = add_conv(net, netOpts, 'block1', {'image'}, 4, 4, netOpts.nChns, 32, 2, 1);
+            outputs = add_batchNorm(net, netOpts, 'block1', outputs, 32);
+            outputs = add_relu(net, netOpts, 'block1', outputs, 0.2) ;
+        %     outputsNormalized = add_normalizeLp(net, netOpts, 'normalizeL1a', outputs, p);
+        %     net.addLayer('repellinglossa', RepellingLoss('loss', 'repelling'), outputsNormalized, 'repela') ;
+        % %     outputs = add_dropout(net, netOpts, 'dropout1', outputs, 0.25);
+            outputs = add_conv(net, netOpts, 'block2', outputs, 4, 4, 32, 64, 2, 1);
+            outputs = add_batchNorm(net, netOpts, 'block2', outputs, 64);
+            outputs = add_relu(net, netOpts, 'block2', outputs, 0.2) ;
+        % %     outputsNormalized = add_normalizeLp(net, netOpts, 'normalizeL1b', outputs, p);
+        % %     net.addLayer('repellinglossb', RepellingLoss('loss', 'repelling'), outputsNormalized, 'repelb') ;
+        % %     outputs = add_dropout(net, netOpts, 'dropout2', outputs, 0.25);
+            outputs = add_conv(net, netOpts, 'block3', outputs, 4, 4, 64, vectorSize, 1, 0);
+        %     outputs = add_batchNorm(net, netOpts, 'block3', outputs, vectorSize);
+        %     outputs = add_relu(net, netOpts, 'block3', outputs, 0.2) ;    
+        % %     outputs = add_dropout(net, netOpts, 'dropout3', outputs, 0.25);
+
+        % %     % these two should be merged into one layer.    
+        %     outputs = add_normalizeLp(net, netOpts, 'normalizeL1', outputs, 1);
+        %     net.addLayer('repellingloss', RepellingLoss('loss', 'repelling'), outputs, 'repel') ;
+        case 'decoder'
+            outputs = add_normalizeLp(net, netOpts, 'normalizeLp', {'encoding'}, 2);
+            outputs = add_deconv(net, netOpts, 'block3_a', outputs, 4, 4, vectorSize, 64, 1, 0);
+            outputs = add_batchNorm(net, netOpts, 'deblock3', outputs, 64);
+            outputs = add_relu(net, netOpts, 'deblock3', outputs, 0.2) ;
+            outputs = add_deconv(net, netOpts, 'block2_a', outputs, 4, 4, 64, 32, 2, 1);
+            outputs = add_batchNorm(net, netOpts, 'deblock2', outputs, 32);
+            outputs = add_relu(net, netOpts, 'deblock2', outputs, 0.2) ;
+            outputs = add_deconv(net, netOpts, 'block1_a', outputs, 4, 4, 32, netOpts.nChns, 2, 1);
+            outputs = add_tanh(net, netOpts, 'deblock1', outputs) ; % this might not work very well in combination with repelling loss
+%             net.addLayer('loss', dagnn.Loss('loss', 'L1'), [outputs, {'image'}], 'objective') ;
+    end    
 end
 
 function outputs = add_upsample(net, opts, name, inputs, in, learnable)
@@ -476,8 +457,7 @@ function outputs = add_normalize(net, opts, name, inputs)
         outputs) ;
 end
 
-function outputs = add_normalizeL1(net, opts, name, inputs)
-    p = 1 ;
+function outputs = add_normalizeLp(net, opts, name, inputs, p)
     block = dagnn.NormalizeLp('p', p) ;
 
     layerName = sprintf('%s_normL1', name);

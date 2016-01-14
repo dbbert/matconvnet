@@ -9,10 +9,10 @@ opts.baseDir = 'data';
 opts.dataset = 'mnist';
 % opts.dataset = 'cifar';
 opts.imageSize = [16 16 1] ;
-opts.seed = 5;
+opts.seed = 6;
 opts.modelType = 'test' ;
-opts.learningRate = logspace(-1, -3, 10) ;
-opts.batchSize = 32 ;
+opts.learningRate = logspace(-2, -3, 10) ;
+opts.batchSize = 16 ;
 opts.nClasses = 8 ;
 
 [opts, varargin] = vl_argparse(opts, varargin) ;
@@ -33,10 +33,13 @@ opts.train.gpus = [1] ;
 opts.train.prefetch = false ;
 opts.train.expDir = opts.expDir ;
 opts.train.learningRate = opts.learningRate ;
-opts.train.weightDecay = 1e-5;
+opts.train.weightDecay = 1e-2;
 opts.train.momentum = 0.50;
-opts.train.derOutputs = {'objective', 1, 'repel', 1} ;
-% opts.train.derOutputs = {'repela', 1, 'repelb', 1, 'repel', 1} ;
+opts.train.derOutputs = {'objective', 1} ;
+% opts.train.derOutputs = {'objective', 1, 'repela', 0} ;
+% opts.train.derOutputs = {'objective', 1, 'repel', 1} ;
+% opts.train.derOutputs = {'objective', 1, 'repelb', 1, 'repel', 1} ;
+% opts.train.derOutputs = {'objective', 1, 'repela', 1, 'repelb', 1, 'repel', 1} ;
 
 opts = vl_argparse(opts, varargin) ;
 opts.train.numEpochs = numel(opts.train.learningRate) ;
@@ -44,12 +47,17 @@ opts.train.numEpochs = numel(opts.train.learningRate) ;
 % -------------------------------------------------------------------------
 % Setup models
 % -------------------------------------------------------------------------
+% encoder
+encoderNet = getNet('type', 'encoder', 'imageSize', opts.imageSize);
+encoderNet.meta.normalization.imageSize = opts.imageSize ;
+encoderNet.meta.normalization.averageImage = [] ;
+print(encoderNet, {'image', [encoderNet.meta.normalization.imageSize 1]})
 
-%
-net = getNet('imageSize', opts.imageSize);
-net.meta.normalization.imageSize = opts.imageSize ;
-net.meta.normalization.averageImage = [] ;
-print(net, {'input', [net.meta.normalization.imageSize 1]})
+% decoder
+decoderNet = getNet('type', 'decoder', 'imageSize', [1 1 50]);
+decoderNet.meta.normalization.imageSize = opts.imageSize ;
+decoderNet.meta.normalization.averageImage = [] ;
+print(decoderNet, {'encoding', [decoderNet.meta.normalization.imageSize 1]})
 
 % -------------------------------------------------------------------------
 % Setup data
@@ -64,6 +72,8 @@ else
     save(opts.imdbPath, '-struct', 'imdb', '-v7.3') ;
 end
 
+% imdb.images.image = randn(1,1,50,size(imdb.images.image,4), 'single');
+
 % Get training and test/validation subsets
 train = find(imdb.images.set == 1) ;
 % train = train(1:1024*10) ;
@@ -77,7 +87,7 @@ val = find(imdb.images.set == 2) ;
 bopts.useGpu = numel(opts.train.gpus) > 0 ;
 
 % Launch SGD
-[net, info] = cnn_train_dag(net, imdb, getBatchWrapper(bopts), opts.train, ...
+[~, stats] = cnn_train_dag_autoencoder(encoderNet, decoderNet, imdb, getBatchWrapper(bopts), opts.train, ...
   'train', train, ...
   'val', val) ;
 
@@ -95,4 +105,4 @@ if opts.useGpu == 1
   images = gpuArray(images) ;
 end
 % inputs = {'input', images, 'label', labels} ;
-inputs = {'input', images} ;
+inputs = {'image', images} ;
