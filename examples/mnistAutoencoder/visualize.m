@@ -6,13 +6,13 @@ if nargin == 0
 %     opts.netFile = '/users/visics/bdebraba/devel/matconvnet/examples/mnistAutoencoder/data/mnist-2-test/net-epoch-5.mat';
 %     opts.netFile = '/users/visics/bdebraba/devel/matconvnet/examples/mnistAutoencoder/data/mnist-3-test/net-epoch-5.mat';
 
-    opts.netFile = '/users/visics/bdebraba/devel/matconvnet/examples/mnistAutoencoder/data/mnist-6-test/net-epoch-1.mat';
+    opts.netFile = '/users/visics/bdebraba/devel/matconvnet/examples/mnistAutoencoder/data/mnist-7-test/net-epoch-100.mat';
     nets = load(opts.netFile);
     encoderNet = dagnn.DagNN.loadobj(nets.encoderNet) ;
     decoderNet = dagnn.DagNN.loadobj(nets.decoderNet) ;
-    imdb = load('/users/visics/bdebraba/devel/matconvnet/examples/mnistAutoencoder/data/mnist-1-data/imdb.mat');
+    imdb = load('/users/visics/bdebraba/devel/matconvnet/examples/mnistAutoencoder/data/mnist-7-data/imdb.mat');
 end
-% decoderNet.removeLayer('loss') ;
+decoderNet.removeLayer('loss') ;
 encoderNet.move('gpu') ;
 encoderNet.mode = 'test';
 decoderNet.move('gpu') ;
@@ -78,7 +78,7 @@ figure;
 imshow(tiledImage);
 
 %% interpolation between real samples
-results = zeros(16,16,1,256,'single');
+results = zeros(32,32,1,256,'single');
 embedding2 = encodingsStored(:,1) ;
 for i = 1:16
     embedding1 = embedding2 ;

@@ -171,7 +171,7 @@ for t=1:opts.batchSize:numel(subset)
 
   % FIRST do a regular autoencoder update with images
     % get this image batch and prefetch the next
-    decoderNet.addLayer('loss', dagnn.Loss('loss', 'L1'), [decoderNet.vars(end).name, {'image'}], 'objective') ;
+%     decoderNet.addLayer('loss', dagnn.Loss('loss', 'L1'), [decoderNet.vars(end).name, {'image'}], 'objective') ;
     
     batchStart = t + (labindex-1) ;
     batchEnd = min(t+opts.batchSize-1, numel(subset)) ;
@@ -204,34 +204,34 @@ for t=1:opts.batchSize:numel(subset)
       encoderNet.eval(inputs) ;
     end
     
-    decoderNet.removeLayer('loss') ;
-    encoderNet.addLayer('loss', dagnn.Loss('loss', 'L1'), [encoderNet.vars(end).name, {'encoding'}], 'objective') ;
-  % SECOND do an inverse autoencoder update with white noise (and enable derivative accumulation)
-    if strcmp(mode, 'train')
-      encoderNet.accumulateParamDers = 1 ; % accumulate the ders with the previous update.
-      decoderNet.accumulateParamDers = 1 ;
-      
-      randomEncodings = gpuArray.randn(size(encodings),'single');
-      
-      % forward through the decoder
-      decoderNet.eval({'encoding', randomEncodings}, []) ;
-      decodings = decoderNet.vars(end).value ;
-      % forward and backward through the encoder
-      encoderNet.eval({'image', decodings, 'encoding', randomEncodings}, {'objective', 1}) ;
-      derivatives = encoderNet.vars(1).der ;
-      % backward through the decoder
-      decoderNet.eval({'encoding', randomEncodings}, {decoderNet.vars(end).name, derivatives}) ; 
-      
-      % extract learning stats
-      statsTmp = opts.extractStatsFn(encoderNet) ;
-      stats.objective2 = statsTmp.objective ;
-    else
-      % TODO
-      encoderNet.mode = 'test' ;
-      encoderNet.eval(inputs) ;
-    end
-    
-    encoderNet.removeLayer('loss') ;
+%     decoderNet.removeLayer('loss') ;
+%     encoderNet.addLayer('loss', dagnn.Loss('loss', 'L1'), [encoderNet.vars(end).name, {'encoding'}], 'objective') ;
+%   % SECOND do an inverse autoencoder update with white noise (and enable derivative accumulation)
+%     if strcmp(mode, 'train')
+%       encoderNet.accumulateParamDers = 1 ; % accumulate the ders with the previous update.
+%       decoderNet.accumulateParamDers = 1 ;
+%       
+%       randomEncodings = gpuArray.randn(size(encodings),'single');
+%       
+%       % forward through the decoder
+%       decoderNet.eval({'encoding', randomEncodings}, []) ;
+%       decodings = decoderNet.vars(end).value ;
+%       % forward and backward through the encoder
+%       encoderNet.eval({'image', decodings, 'encoding', randomEncodings}, {'objective', 1}) ;
+%       derivatives = encoderNet.vars(1).der ;
+%       % backward through the decoder
+%       decoderNet.eval({'encoding', randomEncodings}, {decoderNet.vars(end).name, derivatives}) ; 
+%       
+%       % extract learning stats
+%       statsTmp = opts.extractStatsFn(encoderNet) ;
+%       stats.objective2 = statsTmp.objective ;
+%     else
+%       % TODO
+%       encoderNet.mode = 'test' ;
+%       encoderNet.eval(inputs) ;
+%     end
+%     
+%     encoderNet.removeLayer('loss') ;
 
   % accumulate gradient
   if strcmp(mode, 'train')
@@ -239,9 +239,11 @@ for t=1:opts.batchSize:numel(subset)
       write_gradients(mmap, net) ;
       labBarrier() ;
     end
-    % batchSize * 2 because we have essentially doubled it.
-    encoderState = accumulate_gradients(encoderState, encoderNet, opts, batchSize*2, mmap) ;
-    decoderState = accumulate_gradients(decoderState, decoderNet, opts, batchSize*2, mmap) ;
+    encoderState = accumulate_gradients(encoderState, encoderNet, opts, batchSize, mmap) ;
+    decoderState = accumulate_gradients(decoderState, decoderNet, opts, batchSize, mmap) ;
+%     % batchSize * 2 because we have essentially doubled it.
+%     encoderState = accumulate_gradients(encoderState, encoderNet, opts, batchSize*2, mmap) ;
+%     decoderState = accumulate_gradients(decoderState, decoderNet, opts, batchSize*2, mmap) ;
   end
 
   % print learning statistics

@@ -49,10 +49,10 @@ data = padarray(data, [2 2], 0);
 % rescale between -1 and 1
 data = (data / 255)*2 - 1;
 
-% resize to 16x16
-data = permute(data, [1,2,4,3]);
-data = imresize(data, 0.5);
-data = permute(data, [1,2,4,3]);
+% % resize to 16x16
+% data = permute(data, [1,2,4,3]);
+% data = imresize(data, 0.5);
+% data = permute(data, [1,2,4,3]);
 
 % % rescale between 0 and 1
 % data = (data / 255);

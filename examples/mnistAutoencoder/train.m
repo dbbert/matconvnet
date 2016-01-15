@@ -8,11 +8,11 @@ run(fullfile(fileparts(mfilename('fullpath')),...
 opts.baseDir = 'data';
 opts.dataset = 'mnist';
 % opts.dataset = 'cifar';
-opts.imageSize = [16 16 1] ;
-opts.seed = 6;
+opts.imageSize = [32 32 1] ;
+opts.seed = 7;
 opts.modelType = 'test' ;
-opts.learningRate = logspace(-2, -3, 10) ;
-opts.batchSize = 16 ;
+opts.learningRate = logspace(-4, -6, 100) ;
+opts.batchSize = 32 ;
 opts.nClasses = 8 ;
 
 [opts, varargin] = vl_argparse(opts, varargin) ;
@@ -33,7 +33,7 @@ opts.train.gpus = [1] ;
 opts.train.prefetch = false ;
 opts.train.expDir = opts.expDir ;
 opts.train.learningRate = opts.learningRate ;
-opts.train.weightDecay = 1e-2;
+opts.train.weightDecay = 1e-5;
 opts.train.momentum = 0.50;
 opts.train.derOutputs = {'objective', 1} ;
 % opts.train.derOutputs = {'objective', 1, 'repela', 0} ;

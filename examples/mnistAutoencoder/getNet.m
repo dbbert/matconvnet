@@ -30,35 +30,39 @@ function net = getNet(varargin)
             %     outputs = add_dropout(net, netOpts, 'dropout0', inputs, 0.25);
             outputs = add_conv(net, netOpts, 'block1', {'image'}, 4, 4, netOpts.nChns, 32, 2, 1);
             outputs = add_batchNorm(net, netOpts, 'block1', outputs, 32);
-            outputs = add_relu(net, netOpts, 'block1', outputs, 0.2) ;
-        %     outputsNormalized = add_normalizeLp(net, netOpts, 'normalizeL1a', outputs, p);
-        %     net.addLayer('repellinglossa', RepellingLoss('loss', 'repelling'), outputsNormalized, 'repela') ;
-        % %     outputs = add_dropout(net, netOpts, 'dropout1', outputs, 0.25);
+            outputs = add_relu(net, netOpts, 'block1', outputs) ;
+       
             outputs = add_conv(net, netOpts, 'block2', outputs, 4, 4, 32, 64, 2, 1);
             outputs = add_batchNorm(net, netOpts, 'block2', outputs, 64);
-            outputs = add_relu(net, netOpts, 'block2', outputs, 0.2) ;
-        % %     outputsNormalized = add_normalizeLp(net, netOpts, 'normalizeL1b', outputs, p);
-        % %     net.addLayer('repellinglossb', RepellingLoss('loss', 'repelling'), outputsNormalized, 'repelb') ;
-        % %     outputs = add_dropout(net, netOpts, 'dropout2', outputs, 0.25);
-            outputs = add_conv(net, netOpts, 'block3', outputs, 4, 4, 64, vectorSize, 1, 0);
-        %     outputs = add_batchNorm(net, netOpts, 'block3', outputs, vectorSize);
-        %     outputs = add_relu(net, netOpts, 'block3', outputs, 0.2) ;    
-        % %     outputs = add_dropout(net, netOpts, 'dropout3', outputs, 0.25);
+            outputs = add_relu(net, netOpts, 'block2', outputs) ;
+
+            outputs = add_conv(net, netOpts, 'block3', outputs, 4, 4, 64, 128, 2, 1);
+            outputs = add_batchNorm(net, netOpts, 'block3', outputs, 128);
+            outputs = add_relu(net, netOpts, 'block3', outputs) ;
+
+            outputs = add_conv(net, netOpts, 'block4', outputs, 4, 4, 128, vectorSize, 1, 0);
 
         % %     % these two should be merged into one layer.    
         %     outputs = add_normalizeLp(net, netOpts, 'normalizeL1', outputs, 1);
         %     net.addLayer('repellingloss', RepellingLoss('loss', 'repelling'), outputs, 'repel') ;
         case 'decoder'
-            outputs = add_normalizeLp(net, netOpts, 'normalizeLp', {'encoding'}, 2);
-            outputs = add_deconv(net, netOpts, 'block3_a', outputs, 4, 4, vectorSize, 64, 1, 0);
+%             outputs = add_normalizeLp(net, netOpts, 'normalizeLp', {'encoding'}, 2);
+            outputs = add_deconv(net, netOpts, 'block4_a', {'encoding'}, 4, 4, vectorSize, 128, 1, 0);
+            outputs = add_batchNorm(net, netOpts, 'deblock4', outputs, 128);
+            outputs = add_relu(net, netOpts, 'deblock4', outputs) ;
+
+            outputs = add_deconv(net, netOpts, 'block3_a', outputs, 4, 4, 128, 64, 2, 1);
             outputs = add_batchNorm(net, netOpts, 'deblock3', outputs, 64);
-            outputs = add_relu(net, netOpts, 'deblock3', outputs, 0.2) ;
+            outputs = add_relu(net, netOpts, 'deblock3', outputs) ;
+
             outputs = add_deconv(net, netOpts, 'block2_a', outputs, 4, 4, 64, 32, 2, 1);
             outputs = add_batchNorm(net, netOpts, 'deblock2', outputs, 32);
-            outputs = add_relu(net, netOpts, 'deblock2', outputs, 0.2) ;
+            outputs = add_relu(net, netOpts, 'deblock2', outputs) ;
+            
             outputs = add_deconv(net, netOpts, 'block1_a', outputs, 4, 4, 32, netOpts.nChns, 2, 1);
-            outputs = add_tanh(net, netOpts, 'deblock1', outputs) ; % this might not work very well in combination with repelling loss
-%             net.addLayer('loss', dagnn.Loss('loss', 'L1'), [outputs, {'image'}], 'objective') ;
+%             outputs = add_tanh(net, netOpts, 'deblock1', outputs) ; % this might not work very well in combination with repelling loss
+            
+            net.addLayer('loss', dagnn.Loss('loss', 'L1'), [outputs, {'image'}], 'objective') ;
     end    
 end
 
@@ -233,7 +237,7 @@ end
 
 function outputs = add_deconv(net, opts, name, inputs, h, w, in, out, upsample, crop)
 %     opts.weightInitMethod = 'bilinear';
-    hasBias = false;
+    hasBias = true;
     convOpts = {'CudnnWorkspaceLimit', opts.cudnnWorkspaceLimit} ;
     params = struct(...
             'name', {}, ...
