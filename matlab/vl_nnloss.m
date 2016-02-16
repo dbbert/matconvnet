@@ -142,6 +142,16 @@ if numel(c) == inputSize(4)
   c = repmat(c, inputSize(1:2)) ;
 end
 
+if isa(X,'gpuArray')
+  dataType = classUnderlying(X) ;
+else
+  dataType = class(X) ;
+end
+switch dataType
+  case 'double', toClass = @(x) double(x) ;
+  case 'single', toClass = @(x) single(x) ;
+end
+
 % --------------------------------------------------------------------
 % Spatial weighting
 % --------------------------------------------------------------------
@@ -157,7 +167,7 @@ switch lower(opts.loss)
     assert(labelSize(3) == 1) ;
 
     % null labels denote instances that should be skipped
-    instanceWeights = single(c(:,:,1,:) ~= 0) ;
+    instanceWeights = toClass(c(:,:,1,:) ~= 0) ;
 
   case {'binaryerror', 'binarylog', 'logistic', 'hinge'}
     binary = true ;
@@ -166,17 +176,8 @@ switch lower(opts.loss)
     assert(labelSize(3) == inputSize(3)) ;
 
     % null labels denote instances that should be skipped
-    instanceWeights = single(c ~= 0) ;
-    
-  case {'euclidean', 'l1'}
-    assert(labelSize(3) == inputSize(3)) ;
-    
-    if isempty(opts.instanceWeights)
-        instanceWeights = single(c(:,:,1,:) ~= 0) ;
-    else
-        instanceWeights = reshape(opts.instanceWeights, 1,1,1,[]) ;
-    end
-    opts.instanceWeights = [] ;
+    instanceWeights = toClass(c ~= 0) ;
+
   otherwise
     error('Unknown loss ''%s''.', opts.loss) ;
 end
@@ -206,7 +207,7 @@ if nargin <= 2 || isempty(dzdy)
   switch lower(opts.loss)
     case 'classerror'
       [~,chat] = max(X,[],3) ;
-      t = single(c ~= chat) ;
+      t = toClass(c ~= chat) ;
     case 'topkerror'
       [~,predictions] = sort(X,3,'descend') ;
       t = 1 - sum(bsxfun(@eq, c, predictions(:,:,1:opts.topK,:)), 3) ;
@@ -223,7 +224,7 @@ if nargin <= 2 || isempty(dzdy)
       Q(ci) = -inf ;
       t = max(0, 1 - X(ci) + max(Q,[],3)) ;
     case 'binaryerror'
-      t = single(sign(X - opts.threshold) ~= c) ;
+      t = toClass(sign(X - opts.threshold) ~= c) ;
     case 'binarylog'
       t = -log(c.*(X-0.5) + 0.5) ;
     case 'logistic'
@@ -233,13 +234,6 @@ if nargin <= 2 || isempty(dzdy)
       t = b + log(exp(-b) + exp(a-b)) ;
     case 'hinge'
       t = max(0, 1 - c.*X) ;
-    case 'euclidean'
-      d = bsxfun(@minus, X, c) ;
-      t = sum(d.*d,3) ; % not squared
-%       t = sqrt(sum(d.*d,3)) ; % squared
-    case 'l1'
-      d = bsxfun(@minus, X, c) ;
-      t = sum(abs(d),3) ;
   end
   Y = instanceWeights(:)' * t(:) ;
 else
@@ -278,14 +272,6 @@ else
       Y = - dzdy .* c ./ (1 + exp(c.*X)) ;
     case 'hinge'
       Y = - dzdy .* c .* (c.*X < 1) ;
-    case 'euclidean'
-      d = bsxfun(@minus, X, c) ;
-      Y = bsxfun(@times, 2 * dzdy, d) ; % not squared
-%       Y = sum(d.*d,3).^(-0.5) ;
-%       Y = bsxfun(@times, dzdy .* Y,  d) ;
-    case 'l1'
-      d = bsxfun(@minus, X, c) ;
-      Y = bsxfun(@times, dzdy, sign(d)) ;
   end
 end
 
@@ -293,7 +279,7 @@ end
 function y = zerosLike(x)
 % --------------------------------------------------------------------
 if isa(x,'gpuArray')
-  y = gpuArray.zeros(size(x),'single') ;
+  y = gpuArray.zeros(size(x),classUnderlying(x)) ;
 else
-  y = zeros(size(x),'single') ;
+  y = zeros(size(x),'like',x) ;
 end
