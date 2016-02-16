@@ -8,10 +8,10 @@ run(fullfile(fileparts(mfilename('fullpath')), ...
 opts.baseDir = 'data';
 opts.dataset = 'mnist';
 % opts.dataset = 'cifar';
-opts.imageSize = [32 32 1] ;
-opts.seed = 2;
+opts.imageSize = [16 16 1] ;
+opts.seed = 4;
 opts.modelType = 'test' ;
-opts.learningRate = logspace(-2, -3, 100) ;
+opts.learningRate = logspace(-3, -5, 100) ;
 opts.batchSize = 64 ;
 opts.nClasses = 8 ;
 

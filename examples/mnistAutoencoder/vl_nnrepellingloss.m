@@ -48,7 +48,7 @@ else % backward
                     d = a - b;
 %                     sumd = sumd + d; % L2
 %                   sumd = sumd + sign(d); % L1
-                  sumd = sumd + (sign(d) * (sum(abs(d), 3) < 0.1)); % L1 hinged
+%                   sumd = sumd + (sign(d) * (sum(abs(d), 3) < 0.1)); % L1 hinged
                 end
                 Y(y,x,:,i) = sumd ;
             end

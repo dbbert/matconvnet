@@ -42,6 +42,7 @@ y2=double(y2(9:end)')+1 ;
 % set = [ones(1,numel(y1)) 3*ones(1,numel(y2))];
 set = [ones(1,59904) 2*ones(1,2560)];
 data = single(reshape(cat(3, x1, x2),28,28,1,[]));
+data = data(:,:,:,randperm(size(data,4)));
 
 % pad to 32x32
 data = padarray(data, [2 2], 0);
@@ -49,10 +50,10 @@ data = padarray(data, [2 2], 0);
 % rescale between -1 and 1
 data = (data / 255)*2 - 1;
 
-% % resize to 16x16
-% data = permute(data, [1,2,4,3]);
-% data = imresize(data, 0.5);
-% data = permute(data, [1,2,4,3]);
+% resize to 16x16
+data = permute(data, [1,2,4,3]);
+data = imresize(data, 0.5);
+data = permute(data, [1,2,4,3]);
 
 % % rescale between 0 and 1
 % data = (data / 255);

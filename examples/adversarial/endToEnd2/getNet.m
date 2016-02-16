@@ -42,28 +42,68 @@ function net = getNet(varargin)
 %             outputs = add_tanh(net, netOpts, 'deblock1', outputs);
 %     end
     
+%     switch opts.type
+%         case 'discriminator'
+%             outputs = add_blockNoBatchNorm(net, netOpts, 'block1', inputs, 3, 3, netOpts.nChns, 8, 1, 1);
+%             outputs = add_blockNoBatchNorm(net, netOpts, 'block2', outputs, 3, 3, 8, 16, 2, 1);
+%             outputs = add_blockNoBatchNorm(net, netOpts, 'block3', outputs, 3, 3, 16, 32, 2, 1);
+%             outputs = add_conv(net, netOpts, 'block4', outputs, 4, 4, 32, vectorSize, 1, 0);
+% %             outputs = add_normalize(net, netOpts, 'normalize', outputs);
+%             net.addLayer('euclidean', dagnn.Loss('loss', 'L1'), [outputs, {'embedding'}], 'euclidean') ;
+%             outputs = add_conv(net, netOpts, 'block5', outputs, 1, 1, vectorSize, 2, 1, 0);
+%             net.addLayer('loss', dagnn.Loss('loss', 'softmaxlog'), [outputs, {'label'}], 'objective') ;
+%             net.addLayer('error', dagnn.Loss('loss', 'classerror'), [outputs, {'label'}], 'error') ;
+%         case 'generator'
+% %             outputs = add_normalize(net, netOpts, 'normalize', inputs);
+%             outputs = add_deblock(net, netOpts, 'deblock4', inputs, 4, 4, vectorSize, 128, 1, 0);
+%             outputs = add_deblock(net, netOpts, 'deblock3', outputs, 4, 4, 128, 64, 2, 1);
+%             outputs = add_deblock(net, netOpts, 'deblock2', outputs, 4, 4, 64, 32, 2, 1);
+%             outputs = add_deconv(net, netOpts, 'deblock1', outputs, 3, 3, 32, netOpts.nChns, 1, 1);
+%             outputs = add_tanh(net, netOpts, 'deblock1', outputs);
+%         case 'encoder'
+%             outputs = add_conv(net, netOpts, 'block5', inputs, 1, 1, vectorSize, 2, 1, 0);
+%             net.addLayer('loss', dagnn.Loss('loss', 'softmaxlog'), [outputs, {'label'}], 'objective') ;
+%             net.addLayer('error', dagnn.Loss('loss', 'classerror'), [outputs, {'label'}], 'error') ;
+%     end
+    
     switch opts.type
         case 'discriminator'
-            outputs = add_blockNoBatchNorm(net, netOpts, 'block1', inputs, 3, 3, netOpts.nChns, 8, 1, 1);
-            outputs = add_blockNoBatchNorm(net, netOpts, 'block2', outputs, 3, 3, 8, 16, 2, 1);
-            outputs = add_blockNoBatchNorm(net, netOpts, 'block3', outputs, 3, 3, 16, 32, 2, 1);
-            outputs = add_conv(net, netOpts, 'block4', outputs, 4, 4, 32, vectorSize, 1, 0);
-%             outputs = add_normalize(net, netOpts, 'normalize', outputs);
+%             outputs = add_conv(net, netOpts, 'block1', inputs, 3, 3, netOpts.nChns, 16, 2, 1);
+%             outputs = add_batchNorm(net, netOpts, 'block1', outputs, 16);
+%             outputs = add_relu(net, netOpts, 'block1', outputs) ;
+%             outputs = add_dropout(net, netOpts, 'block1', outputs, 0.25);            
+       
+            outputs = add_conv(net, netOpts, 'block2', inputs, 3, 3, netOpts.nChns, 32, 2, 1);
+            outputs = add_batchNorm(net, netOpts, 'block2', outputs, 32);
+            outputs = add_relu(net, netOpts, 'block2', outputs) ;
+            outputs = add_dropout(net, netOpts, 'block2', outputs, 0.25);
+            
+            outputs = add_conv(net, netOpts, 'block3', outputs, 3, 3, 32, 64, 2, 1);
+            outputs = add_batchNorm(net, netOpts, 'block3', outputs, 64);
+            outputs = add_relu(net, netOpts, 'block3', outputs) ;
+            outputs = add_dropout(net, netOpts, 'block3', outputs, 0.25);
+
+            outputs = add_conv(net, netOpts, 'block4', outputs, 4, 4, 64, vectorSize, 1, 0);
             net.addLayer('euclidean', dagnn.Loss('loss', 'L1'), [outputs, {'embedding'}], 'euclidean') ;
             outputs = add_conv(net, netOpts, 'block5', outputs, 1, 1, vectorSize, 2, 1, 0);
             net.addLayer('loss', dagnn.Loss('loss', 'softmaxlog'), [outputs, {'label'}], 'objective') ;
             net.addLayer('error', dagnn.Loss('loss', 'classerror'), [outputs, {'label'}], 'error') ;
-        case 'generator'
-%             outputs = add_normalize(net, netOpts, 'normalize', inputs);
-            outputs = add_deblock(net, netOpts, 'deblock4', inputs, 4, 4, vectorSize, 128, 1, 0);
-            outputs = add_deblock(net, netOpts, 'deblock3', outputs, 4, 4, 128, 64, 2, 1);
-            outputs = add_deblock(net, netOpts, 'deblock2', outputs, 4, 4, 64, 32, 2, 1);
-            outputs = add_deconv(net, netOpts, 'deblock1', outputs, 3, 3, 32, netOpts.nChns, 1, 1);
-            outputs = add_tanh(net, netOpts, 'deblock1', outputs);
-        case 'encoder'
-            outputs = add_conv(net, netOpts, 'block5', inputs, 1, 1, vectorSize, 2, 1, 0);
-            net.addLayer('loss', dagnn.Loss('loss', 'softmaxlog'), [outputs, {'label'}], 'objective') ;
-            net.addLayer('error', dagnn.Loss('loss', 'classerror'), [outputs, {'label'}], 'error') ;
+        case 'generator'            
+            outputs = add_deconv(net, netOpts, 'block4_a', inputs, 4, 4, vectorSize, 64, 1, 0);
+            outputs = add_batchNorm(net, netOpts, 'deblock4', outputs, 64);
+            outputs = add_relu(net, netOpts, 'deblock4', outputs) ;
+
+            outputs = add_deconv(net, netOpts, 'block3_a', outputs, 4, 4, 64, 32, 2, 1);
+            outputs = add_batchNorm(net, netOpts, 'deblock3', outputs, 32);
+            outputs = add_relu(net, netOpts, 'deblock3', outputs) ;
+
+            outputs = add_deconv(net, netOpts, 'block2_a', outputs, 4, 4, 32, netOpts.nChns, 2, 1);
+%             outputs = add_batchNorm(net, netOpts, 'deblock2', outputs, 16);
+%             outputs = add_relu(net, netOpts, 'deblock2', outputs) ;
+%             
+%             outputs = add_deconv(net, netOpts, 'block1_a', outputs, 4, 4, 16, netOpts.nChns, 2, 1);
+            outputs = add_tanh(net, netOpts, 'deblock1', outputs) ; % this might not work very well in combination with repelling loss
+
     end
 end
 
@@ -177,6 +217,7 @@ function outputs = add_deblock(net, opts, name, inputs, h, w, in, out, stride, p
 end
 
 function outputs = add_conv(net, opts, name, inputs, h, w, in, out, stride, pad)
+    hasBias = false;
     convOpts = {'CudnnWorkspaceLimit', opts.cudnnWorkspaceLimit} ;    
     params = struct(...
             'name', {}, ...
@@ -190,23 +231,26 @@ function outputs = add_conv(net, opts, name, inputs, h, w, in, out, stride, pad)
         varName = name(1:end-4);
     end
 
-    params(1).name = sprintf('%sf',varName) ;
-    params(1).value = init_weight(opts, h, w, in, out, 'single') ;
-    params(2).name = sprintf('%sb',varName) ;
-    params(2).value = zeros(out, 1, 'single') ;
-
     learningRate = [1 2] ;
     weightDecay = [opts.weightDecay 0] ;
-
+    
+    params(1).name = sprintf('%sf',varName) ;
+    params(1).value = init_weight(opts, h, w, in, out, 'single') ;
     params(1).learningRate = learningRate(1) ;
-    params(2).learningRate = learningRate(2) ;
     params(1).weightDecay = weightDecay(1) ;
-    params(2).weightDecay = weightDecay(2) ;
+    
+    if hasBias
+        params(2).name = sprintf('%sb',varName) ;
+        params(2).value = zeros(out, 1, 'single') ;
+        params(2).learningRate = learningRate(2) ;
+        params(2).weightDecay = weightDecay(2) ;
+    end
 
     block = dagnn.Conv() ;
     block.size = size(params(1).value) ;
     block.pad = pad ;
     block.stride = stride ;
+    block.hasBias = hasBias ;
 
     layerName = sprintf('%s_conv', name);
     outputs = {layerName};
@@ -234,6 +278,7 @@ end
 
 function outputs = add_deconv(net, opts, name, inputs, h, w, in, out, upsample, crop)
 %     opts.weightInitMethod = 'bilinear';
+    hasBias = false;
     convOpts = {'CudnnWorkspaceLimit', opts.cudnnWorkspaceLimit} ;
     params = struct(...
             'name', {}, ...
@@ -246,19 +291,21 @@ function outputs = add_deconv(net, opts, name, inputs, h, w, in, out, upsample, 
     if strcmp(name(end-3), '_') % if the name ends with suffix _*, weights should be tied
         varName = name(1:end-4);
     end
-
-    params(1).name = sprintf('%sf',varName) ;
-    params(1).value = init_weight(opts, h, w, out, in, 'single') ;
-    params(2).name = sprintf('%sb',varName) ;
-    params(2).value = zeros(1, out, 'single') ;
-
+    
     learningRate = [1 2] ;
     weightDecay = [opts.weightDecay 0] ;
 
+    params(1).name = sprintf('%sf',varName) ;
+    params(1).value = init_weight(opts, h, w, out, in, 'single') ;
     params(1).learningRate = learningRate(1) ;
-    params(2).learningRate = learningRate(2) ;
     params(1).weightDecay = weightDecay(1) ;
-    params(2).weightDecay = weightDecay(2) ;
+    
+    if hasBias
+        params(2).name = sprintf('%sb',varName) ;
+        params(2).value = zeros(1, out, 'single') ;    
+        params(2).learningRate = learningRate(2) ;    
+        params(2).weightDecay = weightDecay(2) ;
+    end
 
     block = dagnn.ConvTranspose() ;
     block.size = size(params(1).value) ;
@@ -267,6 +314,7 @@ function outputs = add_deconv(net, opts, name, inputs, h, w, in, out, upsample, 
     end
     block.upsample = upsample ;
     block.crop = crop ;
+    block.hasBias = hasBias ;
     % block.numgroups = numgroups ; TODO future
 
     layerName = sprintf('%s_deconv', name);

@@ -1,4 +1,4 @@
-function [net, info] = train(varargin)
+function [net, info] = trainDeepTracking(varargin)
 % CNN_MNIST  Demonstrated MatConNet on MNIST
 
 run(fullfile(fileparts(mfilename('fullpath')),...
@@ -6,13 +6,13 @@ run(fullfile(fileparts(mfilename('fullpath')),...
 
 % experiment and data paths
 opts.baseDir = 'data';
-opts.dataset = 'mnist';
+opts.dataset = 'mnistMoving2';
 % opts.dataset = 'cifar';
-opts.imageSize = [32 32 1] ;
-opts.seed = 70;
+opts.imageSize = [64 64 1] ;
+opts.seed = 2;
 opts.modelType = 'test' ;
-opts.learningRate = logspace(-3, -5, 20) ;
-opts.batchSize = 32 ; % 512
+opts.learningRate = logspace(-4, -6, 20) ;
+opts.batchSize = 16 ; % 512
 opts.nClasses = 8 ;
 
 [opts, varargin] = vl_argparse(opts, varargin) ;
@@ -34,9 +34,9 @@ opts.train.prefetch = false ;
 opts.train.expDir = opts.expDir ;
 opts.train.learningRate = opts.learningRate ;
 opts.train.weightDecay = 1e-4; % 1e-4
-opts.train.momentum = 0.0;
-% opts.train.derOutputs = {'objective', 1} ;
-opts.train.derOutputs = {'objective', 1, 'mmd', 1000000} ;
+opts.train.momentum = 0.50;
+opts.train.derOutputs = {'objective', 1} ;
+% opts.train.derOutputs = {'objective', 1, 'mmd', 1000000} ;
 % opts.train.derOutputs = {'objective', 1, 'mmd', 10000} ;
 % opts.train.derOutputs = {'objective', 1, 'repela', 0} ;
 % opts.train.derOutputs = {'objective', 1, 'repel', 1} ;
@@ -49,23 +49,22 @@ opts.train.numEpochs = numel(opts.train.learningRate) ;
 % -------------------------------------------------------------------------
 % Setup models
 % -------------------------------------------------------------------------
-% default
-defaultNet = getNet('type', 'default', 'imageSize', opts.imageSize);
+% defaultNet = getNet('type', 'deepTracking', 'imageSize', opts.imageSize);
+% defaultNet.meta.normalization.imageSize = opts.imageSize ;
+% defaultNet.meta.normalization.averageImage = [] ;
+% print(defaultNet, {'image1', [defaultNet.meta.normalization.imageSize 1], ...
+%                    'image2', [defaultNet.meta.normalization.imageSize 1], ...
+%                    'image3', [defaultNet.meta.normalization.imageSize 1], ...
+%                    'image4', [defaultNet.meta.normalization.imageSize 1], ...
+%                    'zeroImage', [defaultNet.meta.normalization.imageSize 1]})
+               
+defaultNet = getNet('type', 'deepTrackingConcat', 'imageSize', opts.imageSize);
 defaultNet.meta.normalization.imageSize = opts.imageSize ;
 defaultNet.meta.normalization.averageImage = [] ;
-print(defaultNet, {'image', [defaultNet.meta.normalization.imageSize 1]})
-
-% encoder
-encoderNet = getNet('type', 'encoder', 'imageSize', opts.imageSize);
-encoderNet.meta.normalization.imageSize = opts.imageSize ;
-encoderNet.meta.normalization.averageImage = [] ;
-print(encoderNet, {'image', [encoderNet.meta.normalization.imageSize 1]})
-
-% decoder
-decoderNet = getNet('type', 'decoder', 'imageSize', [1 1 50]);
-decoderNet.meta.normalization.imageSize = opts.imageSize ;
-decoderNet.meta.normalization.averageImage = [] ;
-print(decoderNet, {'encoding', [decoderNet.meta.normalization.imageSize 1]})
+print(defaultNet, {'image1', [defaultNet.meta.normalization.imageSize 1], ...
+                   'image2', [defaultNet.meta.normalization.imageSize 1], ...
+                   'image3', [defaultNet.meta.normalization.imageSize 1], ...
+                   'image4', [defaultNet.meta.normalization.imageSize 1]})
 
 % -------------------------------------------------------------------------
 % Setup data
@@ -111,11 +110,27 @@ function fn = getBatchWrapper(bopts)
 % --------------------------------------------------------------------
 function inputs = getDagNNBatch(imdb, batch, opts)
 % --------------------------------------------------------------------
-images = imdb.images.image(:,:,:,batch) ;
-labels = imdb.images.label(1,batch) ;
+image1 = imdb.images.image1(:,:,:,batch) ;
+image2 = imdb.images.image2(:,:,:,batch) ;
+image3 = imdb.images.image3(:,:,:,batch) ;
+image4 = imdb.images.image4(:,:,:,batch) ;
+zeroImage = zeros(size(image1), 'single');
+
 if opts.useGpu == 1
-  images = gpuArray(images) ;
+  image1 = gpuArray(image1) ;
+  image2 = gpuArray(image2) ;
+  image3 = gpuArray(image3) ;
+  image4 = gpuArray(image4) ;
+  zeroImage = gpuArray(zeroImage) ;
 end
-% inputs = {'input', images, 'label', labels} ;
-% inputs = {'image', images} ;
-inputs = {'image', images, 'inputNoise', gpuArray.rand(1,1,128,numel(batch), 'single')} ;
+
+% inputs = {'image1', image1, ...
+%           'image2', image2, ...
+%           'image3', image3, ...
+%           'image4', image4, ...
+%           'zeroImage', zeroImage};
+      
+inputs = {'image1', image1, ...
+  'image2', image2, ...
+  'image3', image3, ...
+  'image4', image4};

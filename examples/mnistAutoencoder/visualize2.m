@@ -1,8 +1,8 @@
-function visualize(encoderNet, decoderNet, imdb)
+function visualize2(encoderNet, decoderNet, imdb)
 
 if nargin == 0
     clear;
-    imdb = load('/users/visics/bdebraba/devel/matconvnet/examples/mnistAutoencoder/data/mnist-70-data/imdb.mat');
+    imdb = load('/users/visics/bdebraba/devel/matconvnet/examples/mnistAutoencoder/data/mnist-60-data/imdb.mat');
 %     opts.netFile = '/users/visics/bdebraba/devel/matconvnet/examples/mnistAutoencoder/data/mnist-1-test/net-epoch-5.mat';
 %     opts.netFile = '/users/visics/bdebraba/devel/matconvnet/examples/mnistAutoencoder/data/mnist-2-test/net-epoch-5.mat';
 %     opts.netFile = '/users/visics/bdebraba/devel/matconvnet/examples/mnistAutoencoder/data/mnist-3-test/net-epoch-5.mat';
@@ -12,27 +12,33 @@ if nargin == 0
 %     encoderNet = dagnn.DagNN.loadobj(nets.encoderNet) ;
 %     decoderNet = dagnn.DagNN.loadobj(nets.decoderNet) ;
     
-    opts.netFile = '/users/visics/bdebraba/devel/matconvnet/examples/mnistAutoencoder/data/mnist-70-test/net-epoch-20.mat';
+    opts.netFile = '/users/visics/bdebraba/devel/matconvnet/examples/mnistAutoencoder/data/mnist-64-test/net-epoch-2.mat';
     nets = load(opts.netFile);
     encoderNet = dagnn.DagNN.loadobj(nets.net) ;
-    encoderNet.layers = encoderNet.layers(1:4) ;
+    encoderNet.layers = encoderNet.layers(1:16) ;
 %     encoderNet.layers = encoderNet.layers(1:9) ;
     encoderNet.rebuild() ;
     
+    generatorNet = dagnn.DagNN.loadobj(nets.net) ;
+    generatorNet.layers = generatorNet.layers(17:22) ;
+    generatorNet.rebuild() ;
+    
     decoderNet = dagnn.DagNN.loadobj(nets.net) ;
     decoderNet.removeLayer('lossMmd') ;
-    decoderNet.layers = decoderNet.layers(5:end-1) ;
+    decoderNet.layers = decoderNet.layers(23:end-1) ;
     decoderNet.rebuild() ;
-    decoderNet.renameVar('block2_sigmoid','encoding') ;
+    decoderNet.renameVar('block4_dropout','encoding') ;
 %     decoderNet.renameVar('block1_relu','encoding') ;
 end
 % decoderNet.removeLayer('loss') ;
 encoderNet.move('gpu') ;
-% encoderNet.mode = 'test';
-encoderNet.mode = 'normal';
+encoderNet.mode = 'test';
+% encoderNet.mode = 'normal';
 decoderNet.move('gpu') ;
-% decoderNet.mode = 'test';
-decoderNet.mode = 'normal';
+decoderNet.mode = 'test';
+% decoderNet.mode = 'normal';
+generatorNet.move('gpu') ;
+generatorNet.mode = 'test';
 
 %% display filters
 filters = encoderNet.params(1).value;
@@ -85,12 +91,14 @@ gscatter(coefs(:,1), coefs(:,2));
 % scatter3(coefs(:,1), coefs(:,2), coefs(:,3), [], labels-1);
 
 %% generate some random samples
-vectorSize = 128;
-randomEncodings = gpuArray.rand(1,1,vectorSize,256,'single') ;
+vectorSize = 64;
+randomEncodings = gpuArray.rand(1,1,vectorSize,256,'single')*2-1 ;
+generatorNet.eval({'inputNoise', randomEncodings});
+generatedEncodings = generatorNet.vars(end).value;
 % randomEncodings = vl_nnnormalizelp(randomEncodings, [], 2, 'epsilon', eps) ;
 % randomEmbeddings = sqrt(3)*(2*gpuArray.rand(1,1,vectorSize,256,'single')-1);
 
-decoderNet.eval({'encoding', randomEncodings});
+decoderNet.eval({'encoding', generatedEncodings});
 results = gather(decoderNet.vars(end).value);
 tiledImage = tileImage(results,16,2);
 figure;

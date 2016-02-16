@@ -86,7 +86,7 @@ for epoch=start+1:opts.numEpochs
   
   discriminatorState = generatorState ;
 %   discriminatorState.learningRate = 0 ;
-  discriminatorState.learningRate = discriminatorState.learningRate;
+  discriminatorState.learningRate = 0.001*generatorState.learningRate;
 
   if numGpus <= 1
     stats.train(epoch) = process_epoch(generatorNet, discriminatorNet, generatorState, discriminatorState, opts, 'train') ;
