@@ -24,13 +24,31 @@ opts.epsilon = 1e-2 ;
 opts.p = 2 ;
 opts = vl_argparse(opts, varargin) ;
 
-massp = (sum(x.^opts.p,3) + opts.epsilon) ;
-mass = massp.^(1/opts.p) ;
-y = bsxfun(@rdivide, x, mass) ;
-
-if nargin < 2 || isempty(dzdy)
-  return ;
+% L1 normalization
+if opts.p == 1
+  mass = sum(abs(x),3) ;
+  y = bsxfun(@rdivide, x, mass + opts.epsilon) ;
+  
+%   assert(all(sum(abs(y(1,1,:,:)),3))) ;
+    
+  if nargin < 2 || isempty(dzdy)
+      return ;
+  else  
+      % TODO: check if this is correct
+      dzdy = bsxfun(@rdivide, dzdy, mass) ;
+      y = dzdy - bsxfun(@times, sum(dzdy .* x, 3), bsxfun(@rdivide, sign(x), mass + opts.epsilon)) ;
+  end  
+  
+% Other normalizations
 else
-  dzdy = bsxfun(@rdivide, dzdy, mass) ;
-  y = dzdy - bsxfun(@times, sum(dzdy .* x, 3), bsxfun(@rdivide, x.^(opts.p-1), massp)) ;
+    massp = (sum(x.^opts.p,3) + opts.epsilon) ;
+    mass = massp.^(1/opts.p) ;
+    y = bsxfun(@rdivide, x, mass) ;
+
+    if nargin < 2 || isempty(dzdy)
+      return ;
+    else
+      dzdy = bsxfun(@rdivide, dzdy, mass) ;
+      y = dzdy - bsxfun(@times, sum(dzdy .* x, 3), bsxfun(@rdivide, x.^(opts.p-1), massp)) ;
+    end
 end
